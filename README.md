@@ -1,5 +1,6 @@
 # openwrt-package
-补充openwrt插件
+补充插件
 
-# 关联openwrt项目
-基础代码[x-wrt](https://github.com/x-wrt/)
+# OpenWrt相关
+- 基础代码：[X-Wrt](https://github.com/x-wrt/)
+- 系统版本：22.10.3
