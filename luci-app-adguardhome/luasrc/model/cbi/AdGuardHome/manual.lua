@@ -8,10 +8,30 @@ require("table")
 function gen_template_config()
 	local b
 	local d=""
-	for cnt in io.lines("/tmp/resolv.conf.d/resolv.conf.auto") do
-		b=string.match (cnt,"^[^#]*nameserver%s+([^%s]+)$")
-		if (b~=nil) then
-			d=d.."  - "..b.."\n"
+	local rcauto=uci:get("dhcp","@dnsmasq[0]","resolvfile")
+	if (rcauto == nil) then
+		for fle in fs.dir("/var/etc") do
+			if fle ~="." and fle ~=".."then
+				tf="/var/etc/"..fle
+				if string.match(tf,"/var/etc/dnsmasq.conf.") then
+					if tf and fs.access(tf) then
+						for le in io.lines(tf) do
+							sf=string.match (le,"^resolv%-file=(%S+)")
+								if (sf ~=nil) then
+								rcauto=sf
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	if rcauto and fs.access(rcauto) then
+		for cnt in io.lines(rcauto) do
+			b=string.match (cnt,"^[^#]*nameserver%s+([^%s]+)$")
+			if (b~=nil) then
+				d=d.."    - "..b.."\n"
+			end
 		end
 	end
 	local f=io.open("/usr/share/AdGuardHome/AdGuardHome_template.yaml", "r+")
@@ -20,9 +40,9 @@ function gen_template_config()
 	while (1) do
     	a=f:read("*l")
 		if (a=="#bootstrap_dns") then
-			a="  - 114.114.114.114"
+			a=d
 		elseif (a=="#upstream_dns") then
-			a="  - 127.0.0.1:7874"
+			a=d
 		elseif (a==nil) then
 			break
 		end
