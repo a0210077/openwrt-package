@@ -6,6 +6,7 @@
 |~~[luci-app-adguardhome](https://github.com/TioaChan/luci-app-adguardhome.git)~~|~~AdGuardHome的luci界面~~|无法通过编译，切换到Ad-block(2024-06-08)|
 |~~[luci-app-ttnode](https://github.com/jerrykuku/luci-app-ttnode.git)~~|~~甜糖星愿自动采集~~|无法登陆(2022-11-15)|
 |[luci-app-vlmcsd](https://github.com/cokebar/luci-app-vlmcsd.git)|KMS服务器的luci界面||
+|[openwrt-passwall](https://github.com/xiaorouji/openwrt-passwall.git)|Passwall_package||
 |[openwrt-passwall2](https://github.com/xiaorouji/openwrt-passwall2.git)|Passwall2||
 |[openwrt-vlmcsd](https://github.com/cokebar/openwrt-vlmcsd.git)|KMS服务器||
 

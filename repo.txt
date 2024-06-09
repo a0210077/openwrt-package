@@ -3,3 +3,4 @@ https://github.com/cokebar/openwrt-vlmcsd.git|KMS服务器|
 https://github.com/cokebar/luci-app-vlmcsd.git|KMS服务器的luci界面|
 #https://github.com/jerrykuku/luci-app-ttnode.git|甜糖星愿自动采集|无法登陆(2022-11-15)
 https://github.com/xiaorouji/openwrt-passwall2.git;1.29-1|Passwall2|
+https://github.com/xiaorouji/openwrt-passwall.git;main|Passwall_package|
