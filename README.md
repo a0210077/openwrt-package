@@ -11,6 +11,7 @@
 |~~[openwrt-passwall2](https://github.com/xiaorouji/openwrt-passwall2.git)~~|~~Passwall2~~|更换为SSR+|
 |~~[openwrt-passwall-packages](https://github.com/xiaorouji/openwrt-passwall-packages.git)~~|~~Passwall_package~~|更换为SSR+|
 |[helloworld](https://github.com/fw876/helloworld.git)|SSR+||
+|[luci-app-qbittorrent](https://github.com/sbwml/luci-app-qbittorrent.git)|qBittorrent||
 
 
 # OpenWrt相关

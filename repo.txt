@@ -6,3 +6,4 @@ https://github.com/cokebar/luci-app-vlmcsd.git|KMS服务器的luci界面|
 #https://github.com/xiaorouji/openwrt-passwall2.git;1.29-1|Passwall2|更换为SSR+
 #https://github.com/xiaorouji/openwrt-passwall-packages.git;main|Passwall_package|更换为SSR+
 https://github.com/fw876/helloworld.git|SSR+|
+https://github.com/sbwml/luci-app-qbittorrent.git|qBittorrent|
