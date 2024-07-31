@@ -12,7 +12,6 @@
 |[openwrt-passwall-packages](https://github.com/xiaorouji/openwrt-passwall-packages.git)|Passwall_package||
 |~~[helloworld](https://github.com/fw876/helloworld.git)~~|~~SSR+~~|SSR+未支持http代理|
 |[luci-app-qbittorrent](https://github.com/sbwml/luci-app-qbittorrent.git)|qBittorrent||
-|[openwrt-podman](https://github.com/a0210077/openwrt-podman.git)|podman-self||
 
 
 # OpenWrt相关
