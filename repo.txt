@@ -7,3 +7,4 @@ https://github.com/xiaorouji/openwrt-passwall2.git;1.30-3|Passwall2|
 https://github.com/xiaorouji/openwrt-passwall-packages.git;main|Passwall_package|
 #https://github.com/fw876/helloworld.git|SSR+|SSR+未支持http代理
 https://github.com/sbwml/luci-app-qbittorrent.git|qBittorrent|
+https://github.com/a0210077/openwrt-podman-replace.git|podman-replace|Podman降级包
