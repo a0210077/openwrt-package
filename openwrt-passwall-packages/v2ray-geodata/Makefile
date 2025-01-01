@@ -12,22 +12,22 @@ PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
 
 include $(INCLUDE_DIR)/package.mk
 
-GEOIP_VER:=202410310053
+GEOIP_VER:=202412260052
 GEOIP_FILE:=geoip.dat.$(GEOIP_VER)
 define Download/geoip
   URL:=https://github.com/v2fly/geoip/releases/download/$(GEOIP_VER)/
   URL_FILE:=geoip.dat
   FILE:=$(GEOIP_FILE)
-  HASH:=2762fa0a7d1728089b7723b7796cb5ca955330a3fa2e4407fa40e480fbf9cea7
+  HASH:=139100814bdf9a6823b85783fdedce3a5e62d1432965b5c3f97541e117a7f83f
 endef
 
-GEOSITE_VER:=20241013063848
+GEOSITE_VER:=20241221105938
 GEOSITE_FILE:=dlc.dat.$(GEOSITE_VER)
 define Download/geosite
   URL:=https://github.com/v2fly/domain-list-community/releases/download/$(GEOSITE_VER)/
   URL_FILE:=dlc.dat
   FILE:=$(GEOSITE_FILE)
-  HASH:=f820556ed3aa02eb7eadba7a3743d7e6df8e9234785d0d82d2d1edce20fe4b3c
+  HASH:=aa65cee72dd6afbf9dd4c474b4ff28ceb063f6abf99249a084091adb4f282f09
 endef
 
 define Package/v2ray-geodata/template
@@ -41,14 +41,14 @@ endef
 define Package/v2ray-geoip
   $(call Package/v2ray-geodata/template)
   TITLE:=GeoIP List for V2Ray
-  VERSION:=$(GEOIP_VER)-$(PKG_RELEASE)
+  VERSION:=$(GEOIP_VER).$(PKG_RELEASE)
   LICENSE:=CC-BY-SA-4.0
 endef
 
 define Package/v2ray-geosite
   $(call Package/v2ray-geodata/template)
   TITLE:=Geosite List for V2Ray
-  VERSION:=$(GEOSITE_VER)-$(PKG_RELEASE)
+  VERSION:=$(GEOSITE_VER).$(PKG_RELEASE)
   LICENSE:=MIT
 endef
 

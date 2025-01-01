@@ -19,7 +19,7 @@ local ssub, slen, schar, sbyte, sformat, sgsub = string.sub, string.len, string.
 local split = api.split
 local jsonParse, jsonStringify = luci.jsonc.parse, luci.jsonc.stringify
 local base64Decode = api.base64Decode
-local uci = luci.model.uci.cursor()
+local uci = api.libuci
 uci:revert(appname)
 
 local has_ss = api.is_finded("ss-redir")
@@ -33,6 +33,8 @@ local trojan_type_default = uci:get(appname, "@global_subscribe[0]", "trojan_typ
 local vmess_type_default = uci:get(appname, "@global_subscribe[0]", "vmess_type") or "xray"
 local vless_type_default = uci:get(appname, "@global_subscribe[0]", "vless_type") or "xray"
 local hysteria2_type_default = uci:get(appname, "@global_subscribe[0]", "hysteria2_type") or "hysteria2"
+local domain_strategy_default = uci:get(appname, "@global_subscribe[0]", "domain_strategy") or ""
+local domain_strategy_node = ""
 -- 判断是否过滤节点关键字
 local filter_keyword_mode_default = uci:get(appname, "@global_subscribe[0]", "filter_keyword_mode") or "0"
 local filter_keyword_discard_list_default = uci:get(appname, "@global_subscribe[0]", "filter_discard_list") or {}
@@ -211,7 +213,7 @@ do
 				set = function(o)
 					for kk, vv in pairs(CONFIG) do
 						if (vv.remarks == id .. "备用节点的列表") then
-							uci:set_list(appname, id, "autoswitch_backup_node", vv.new_nodes)
+							api.uci_set_list(uci, appname, id, "autoswitch_backup_node", vv.new_nodes)
 						end
 					end
 				end
@@ -246,7 +248,7 @@ do
 						currentNode = _node_id and uci:get_all(appname, _node_id) or nil,
 						remarks = "分流" .. e.remarks .. "节点",
 						set = function(o, server)
-							if not server then server = "nil" end
+							if not server then server = "" end
 							uci:set(appname, node_id, e[".name"], server)
 							o.newNodeId = server
 						end
@@ -283,8 +285,8 @@ do
 						if (vv.remarks == "Xray负载均衡节点[" .. node_id .. "]列表") then
 							uci:foreach(appname, "nodes", function(node2)
 								if node2[".name"] == node[".name"] then
-									local section = uci:section(appname, "nodes", node_id)
-									uci:set_list(appname, section, "balancing_node", vv.new_nodes)
+									local section = api.uci_section(uci, appname, "nodes", node_id)
+									api.uci_set_list(uci, appname, section, "balancing_node", vv.new_nodes)
 								end
 							end)
 						end
@@ -310,6 +312,23 @@ do
 				}
 			end
 		else
+			--前置代理节点
+			local currentNode = uci:get_all(appname, node_id) or nil
+			if currentNode and currentNode.preproxy_node then
+				CONFIG[#CONFIG + 1] = {
+					log = true,
+					id = node_id,
+					remarks = "节点[" .. node_id .. "]前置代理节点",
+					currentNode = uci:get_all(appname, currentNode.preproxy_node) or nil,
+					set = function(o, server)
+						uci:set(appname, node_id, "preproxy_node", server)
+						o.newNodeId = server
+					end,
+					delete = function(o)
+						uci:delete(appname, node_id, "preproxy_node")
+					end
+				}
+			end
 			--落地节点
 			local currentNode = uci:get_all(appname, node_id) or nil
 			if currentNode and currentNode.to_node then
@@ -426,11 +445,19 @@ local function processData(szType, content, add_mode, add_from)
 		-- result.mux = 1
 		-- result.mux_concurrency = 8
 
-		if not info.net then
-			info.net = "tcp"
-		end
+		if not info.net then info.net = "tcp" end
 		info.net = string.lower(info.net)
-		result.transport = info.net
+		if result.type == "sing-box" and info.net == "raw" then 
+			info.net = "tcp"
+		elseif result.type == "Xray" and info.net == "tcp" then
+			info.net = "raw"
+		end
+		if info.net == 'h2' or info.net == 'http' then
+			info.net = "http"
+			result.transport = (result.type == "Xray") and "xhttp" or "http"
+		else
+			result.transport = info.net
+		end
 		if info.net == 'ws' then
 			result.ws_host = info.host
 			result.ws_path = info.path
@@ -450,11 +477,17 @@ local function processData(szType, content, add_mode, add_from)
 				end
 			end
 		end
-		if info.net == 'h2' then
-			result.h2_host = info.host
-			result.h2_path = info.path
+		if info.net == "http" then
+			if result.type == "Xray" then
+				result.xhttp_mode = "stream-one"
+				result.xhttp_host = info.host
+				result.xhttp_path = info.path
+			else
+				result.http_host = info.host
+				result.http_path = info.path
+			end
 		end
-		if info.net == 'tcp' then
+		if info.net == 'raw' or info.net == 'tcp' then
 			if info.type and info.type ~= "http" then
 				info.type = "none"
 			end
@@ -480,9 +513,19 @@ local function processData(szType, content, add_mode, add_from)
 		if info.net == 'grpc' then
 			result.grpc_serviceName = info.path
 		end
-		if info.net == 'splithttp' then
-			result.splithttp_host = info.host
-			result.splithttp_path = info.path
+		if info.net == 'xhttp' or info.net == 'splithttp' then
+			result.xhttp_host = info.host
+			result.xhttp_path = info.path
+			result.xhttp_mode = params.mode or "auto"
+			result.xhttp_extra = params.extra
+			local success, Data = pcall(jsonParse, params.extra)
+				if success and Data then
+					local address = (Data.extra and Data.extra.downloadSettings and Data.extra.downloadSettings.address)
+							or (Data.downloadSettings and Data.downloadSettings.address)
+					result.download_address = address and address ~= "" and address or nil
+				else
+					result.download_address = nil
+				end
 		end
 		if not info.security then result.security = "auto" end
 		if info.tls == "tls" or info.tls == "1" then
@@ -493,7 +536,7 @@ local function processData(szType, content, add_mode, add_from)
 			result.tls = "0"
 		end
 
-		if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "splithttp") then
+		if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "xhttp" or result.transport == "splithttp") then
 			log("跳过节点:" .. result.remarks .."，因Sing-Box不支持" .. szType .. "协议的" .. result.transport .. "传输方式，需更换Xray。")
 			return nil
 		end
@@ -541,7 +584,7 @@ local function processData(szType, content, add_mode, add_from)
 			info = info:sub(1, find_index - 1)
 		end
 
-		local hostInfo = split(base64Decode(info), "@")
+		local hostInfo = split(base64Decode(UrlDecode(info)), "@")
 		if hostInfo and #hostInfo > 0 then
 			local host_port = hostInfo[#hostInfo]
 			-- [2001:4860:4860::8888]:443
@@ -580,19 +623,16 @@ local function processData(szType, content, add_mode, add_from)
 			if ss_type_default == "xray" and has_xray then
 				result.type = 'Xray'
 				result.protocol = 'shadowsocks'
-				result.transport = 'tcp'
+				result.transport = 'raw'
 			end
 			if ss_type_default == "sing-box" and has_singbox then
 				result.type = 'sing-box'
 				result.protocol = 'shadowsocks'
 			end
 
-			if result.type == "SS-Rust" and method:lower() == "chacha20-poly1305" then
-				result.method = "chacha20-ietf-poly1305"
-			end
-
-			if result.type == "Xray" and method:lower() == "chacha20-ietf-poly1305" then
-				result.method = "chacha20-poly1305"
+			if result.type ~= "Xray" then
+				result.method = (method:lower() == "chacha20-poly1305" and "chacha20-ietf-poly1305") or
+						(method:lower() == "xchacha20-poly1305" and "xchacha20-ietf-poly1305") or method
 			end
 
 			if result.plugin then
@@ -621,7 +661,17 @@ local function processData(szType, content, add_mode, add_from)
 
 			if params.type then
 				params.type = string.lower(params.type)
-				result.transport = params.type
+				if result.type == "sing-box" and params.type == "raw" then 
+					params.type = "tcp"
+				elseif result.type == "Xray" and params.type == "tcp" then
+					params.type = "raw"
+				end
+				if params.type == "h2" or params.type == "http" then
+					params.type = "http"
+					result.transport = (result.type == "Xray") and "xhttp" or "http"
+				else
+					result.transport = params.type
+				end
 				if result.type ~= "SS-Rust" and result.type ~= "SS" then
 					if params.type == 'ws' then
 						result.ws_host = params.host
@@ -642,18 +692,19 @@ local function processData(szType, content, add_mode, add_from)
 							end
 						end
 					end
-					if params.type == 'h2' or params.type == 'http' then
+					if params.type == "http" then
 						if result.type == "sing-box" then
 							result.transport = "http"
 							result.http_host = params.host
 							result.http_path = params.path
-						elseif result.type == "xray" then
-							result.transport = "h2"
-							result.h2_host = params.host
-							result.h2_path = params.path
+						elseif result.type == "Xray" then
+							result.transport = "xhttp"
+							result.xhttp_mode = "stream-one"
+							result.xhttp_host = params.host
+							result.xhttp_path = params.path
 						end
 					end
-					if params.type == 'tcp' then
+					if params.type == 'raw' or params.type == 'tcp' then
 						result.tcp_guise = params.headerType or "none"
 						result.tcp_guise_http_host = params.host
 						result.tcp_guise_http_path = params.path
@@ -677,7 +728,7 @@ local function processData(szType, content, add_mode, add_from)
 					if params.type == 'grpc' then
 						if params.path then result.grpc_serviceName = params.path end
 						if params.serviceName then result.grpc_serviceName = params.serviceName end
-						result.grpc_mode = params.mode
+						result.grpc_mode = params.mode or "gun"
 					end
 					result.tls = "0"
 					if params.security == "tls" or params.security == "reality" then
@@ -765,11 +816,19 @@ local function processData(szType, content, add_mode, add_from)
 				result.tls_allowInsecure = allowInsecure_default and "1" or "0"
 			end
 
-			if not params.type then
-				params.type = "tcp"
-			end
+			if not params.type then params.type = "tcp" end
 			params.type = string.lower(params.type)
-			result.transport = params.type
+			if result.type == "sing-box" and params.type == "raw" then 
+				params.type = "tcp"
+			elseif result.type == "Xray" and params.type == "tcp" then
+				params.type = "raw"
+			end
+			if params.type == "h2" or params.type == "http" then
+				params.type = "http"
+				result.transport = (result.type == "Xray") and "xhttp" or "http"
+			else
+				result.transport = params.type
+			end
 			if params.type == 'ws' then
 				result.ws_host = params.host
 				result.ws_path = params.path
@@ -789,18 +848,19 @@ local function processData(szType, content, add_mode, add_from)
 					end
 				end
 			end
-			if params.type == 'h2' or params.type == 'http' then
+			if params.type == "http" then
 				if result.type == "sing-box" then
 					result.transport = "http"
 					result.http_host = params.host
 					result.http_path = params.path
-				elseif result.type == "xray" then
-					result.transport = "h2"
-					result.h2_host = params.host
-					result.h2_path = params.path
+				elseif result.type == "Xray" then
+					result.transport = "xhttp"
+					result.xhttp_mode = "stream-one"
+					result.xhttp_host = params.host
+					result.xhttp_path = params.path
 				end
 			end
-			if params.type == 'tcp' then
+			if params.type == 'raw' or params.type == 'tcp' then
 				result.tcp_guise = params.headerType or "none"
 				result.tcp_guise_http_host = params.host
 				result.tcp_guise_http_path = params.path
@@ -824,18 +884,18 @@ local function processData(szType, content, add_mode, add_from)
 			if params.type == 'grpc' then
 				if params.path then result.grpc_serviceName = params.path end
 				if params.serviceName then result.grpc_serviceName = params.serviceName end
-				result.grpc_mode = params.mode
+				result.grpc_mode = params.mode or "gun"
 			end
-			if params.type == 'splithttp' then
-				result.splithttp_host = params.host
-				result.splithttp_path = params.path
+			if params.type == 'xhttp' or params.type == 'splithttp' then
+				result.xhttp_host = params.host
+				result.xhttp_path = params.path
 			end
 
 			result.encryption = params.encryption or "none"
 
 			result.flow = params.flow or nil
 
-			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "splithttp") then
+			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "xhttp" or result.transport == "splithttp") then
 				log("跳过节点:" .. result.remarks .."，因Sing-Box不支持" .. szType .. "协议的" .. result.transport .. "传输方式，需更换Xray。")
 				return nil
 			end
@@ -897,11 +957,19 @@ local function processData(szType, content, add_mode, add_from)
 				result.address = host_port
 			end
 
-			if not params.type then
-				params.type = "tcp"
-			end
+			if not params.type then params.type = "tcp" end
 			params.type = string.lower(params.type)
-			result.transport = params.type
+			if result.type == "sing-box" and params.type == "raw" then 
+				params.type = "tcp"
+			elseif result.type == "Xray" and params.type == "tcp" then
+				params.type = "raw"
+			end
+			if params.type == "h2" or params.type == "http" then
+				params.type = "http"
+				result.transport = (result.type == "Xray") and "xhttp" or "http"
+			else
+				result.transport = params.type
+			end
 			if params.type == 'ws' then
 				result.ws_host = params.host
 				result.ws_path = params.path
@@ -921,18 +989,19 @@ local function processData(szType, content, add_mode, add_from)
 					end
 				end
 			end
-			if params.type == 'h2' or params.type == 'http' then
+			if params.type == "http" then
 				if result.type == "sing-box" then
 					result.transport = "http"
 					result.http_host = params.host
 					result.http_path = params.path
-				elseif result.type == "xray" then
-					result.transport = "h2"
-					result.h2_host = params.host
-					result.h2_path = params.path
+				elseif result.type == "Xray" then
+					result.transport = "xhttp"
+					result.xhttp_mode = "stream-one"
+					result.xhttp_host = params.host
+					result.xhttp_path = params.path
 				end
 			end
-			if params.type == 'tcp' then
+			if params.type == 'raw' or params.type == 'tcp' then
 				result.tcp_guise = params.headerType or "none"
 				result.tcp_guise_http_host = params.host
 				result.tcp_guise_http_path = params.path
@@ -955,11 +1024,11 @@ local function processData(szType, content, add_mode, add_from)
 			if params.type == 'grpc' then
 				if params.path then result.grpc_serviceName = params.path end
 				if params.serviceName then result.grpc_serviceName = params.serviceName end
-				result.grpc_mode = params.mode
+				result.grpc_mode = params.mode or "gun"
 			end
-			if params.type == 'splithttp' then
-				result.splithttp_host = params.host
-				result.splithttp_path = params.path
+			if params.type == 'xhttp' or params.type == 'splithttp' then
+				result.xhttp_host = params.host
+				result.xhttp_path = params.path
 			end
 			
 			result.encryption = params.encryption or "none"
@@ -983,7 +1052,7 @@ local function processData(szType, content, add_mode, add_from)
 			result.port = port
 			result.tls_allowInsecure = allowInsecure_default and "1" or "0"
 
-			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "splithttp") then
+			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "xhttp" or result.transport == "splithttp") then
 				log("跳过节点:" .. result.remarks .."，因Sing-Box不支持" .. szType .. "协议的" .. result.transport .. "传输方式，需更换Xray。")
 				return nil
 			end
@@ -1161,12 +1230,19 @@ local function processData(szType, content, add_mode, add_from)
 	return result
 end
 
-local function curl(url, file, ua)
+local function curl(url, file, ua, mode)
 	local curl_args = api.clone(api.curl_args)
 	if ua and ua ~= "" and ua ~= "curl" then
 		table.insert(curl_args, '--user-agent "' .. ua .. '"')
 	end
-	local return_code, result = api.curl_logic(url, file, curl_args)
+	local return_code
+	if mode == "direct" then
+		return_code = api.curl_direct(url, file, curl_args)
+	elseif mode == "proxy" then
+		return_code = api.curl_proxy(url, file, curl_args)
+	else
+		return_code = api.curl_auto(url, file, curl_args)
+	end
 	return return_code
 end
 
@@ -1184,10 +1260,10 @@ local function truncate_nodes(add_from)
 			if config.currentNode and config.currentNode.add_mode == "2" then
 				if add_from then
 					if config.currentNode.add_from and config.currentNode.add_from == add_from then
-						config.set(config, "nil")
+						config.set(config, "")
 					end
 				else
-					config.set(config, "nil")
+					config.set(config, "")
 				end
 				if config.id then
 					uci:delete(appname, config.id)
@@ -1321,7 +1397,7 @@ local function select_node(nodes, config)
 			config.set(config, server)
 		end
 	else
-		config.set(config, "nil")
+		config.set(config, "")
 	end
 end
 
@@ -1348,9 +1424,13 @@ local function update_node(manual)
 		local remark = v["remark"]
 		local list = v["list"]
 		for _, vv in ipairs(list) do
-			local cfgid = uci:section(appname, "nodes", api.gen_short_uuid())
+			local cfgid = api.uci_section(uci, appname, "nodes", api.gen_short_uuid())
 			for kkk, vvv in pairs(vv) do
 				uci:set(appname, cfgid, kkk, vvv)
+				-- sing-box 域名解析策略
+				if kkk == "type" and vvv == "sing-box" then
+					uci:set(appname, cfgid, "domain_strategy", domain_strategy_node)
+				end
 			end
 		end
 	end
@@ -1544,9 +1624,17 @@ local execute = function()
 			if hysteria2_type ~= "global" then
 				hysteria2_type_default = hysteria2_type
 			end
+			local domain_strategy = value.domain_strategy or "global"
+			if domain_strategy ~= "global" then
+				domain_strategy_node = domain_strategy
+			else
+				domain_strategy_node = domain_strategy_default
+			end
 			local ua = value.user_agent
-			log('正在订阅:【' .. remark .. '】' .. url)
-			local raw = curl(url, "/tmp/" .. cfgid, ua)
+			local access_mode = value.access_mode
+			local result = (not access_mode) and "自动" or (access_mode == "direct" and "直连访问" or (access_mode == "proxy" and "通过代理" or "自动"))
+			log('正在订阅:【' .. remark .. '】' .. url .. ' [' .. result .. ']')
+			local raw = curl(url, "/tmp/" .. cfgid, ua, access_mode)
 			if raw == 0 then
 				local f = io.open("/tmp/" .. cfgid, "r")
 				local stdout = f:read("*all")
