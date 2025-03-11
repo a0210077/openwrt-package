@@ -1,5 +1,5 @@
 https://github.com/cokebar/openwrt-vlmcsd.git|KMS服务器|
 https://github.com/cokebar/luci-app-vlmcsd.git|KMS服务器的luci界面|
-https://github.com/xiaorouji/openwrt-passwall2.git;25.1.1-1|Passwall2|
+https://github.com/xiaorouji/openwrt-passwall2.git;25.3.2-1|Passwall2|
 https://github.com/xiaorouji/openwrt-passwall-packages.git;main|Passwall_package|
 https://github.com/sbwml/luci-app-qbittorrent.git|qBittorrent|

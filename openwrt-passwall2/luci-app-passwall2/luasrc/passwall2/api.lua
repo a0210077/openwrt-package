@@ -3,7 +3,6 @@ local com = require "luci.passwall2.com"
 bin = require "nixio".bin
 fs = require "nixio.fs"
 sys = require "luci.sys"
-libuci = require "uci".cursor()
 uci = require"luci.model.uci".cursor()
 util = require "luci.util"
 datatypes = require "luci.cbi.datatypes"
@@ -30,49 +29,52 @@ function log(...)
 	end
 end
 
-function uci_set_list(cursor, config, section, option, value)
-	if config and section and option then
-		if not value or #value == 0 then
-			return cursor:delete(config, section, option)
-		end
-		return cursor:set(
-			config, section, option,
-			( type(value) == "table" and value or { value } )
-		)
-	end
-	return false
+function is_old_uci()
+	return sys.call("grep -E 'require[ \t]*\"uci\"' /usr/lib/lua/luci/model/uci.lua >/dev/null 2>&1") == 0
 end
 
-function uci_section(cursor, config, type, name, values)
-	local stat = true
-	if name then
-		stat = cursor:set(config, name, type)
+function uci_save(cursor, config, commit, apply)
+	if is_old_uci() then
+		cursor:save(config)
+		if commit then
+			cursor:commit(config)
+			if apply then
+				sys.call("/etc/init.d/" .. config .. " reload > /dev/null 2>&1 &")
+			end
+		end
 	else
-		name = cursor:add(config, type)
-		stat = name and true
+		commit = true
+		if commit then
+			if apply then
+				cursor:commit(config)
+			else
+				sh_uci_commit(config)
+			end
+		end
 	end
-
-	return stat and name
 end
 
 function sh_uci_get(config, section, option)
 	exec_call(string.format("uci -q get %s.%s.%s", config, section, option))
-	exec_call(string.format("uci -q commit %s", config))
 end
 
-function sh_uci_set(config, section, option, val)
+function sh_uci_set(config, section, option, val, commit)
 	exec_call(string.format("uci -q set %s.%s.%s=\"%s\"", config, section, option, val))
-	exec_call(string.format("uci -q commit %s", config))
+	if commit then sh_uci_commit(config) end
 end
 
-function sh_uci_del(config, section, option)
+function sh_uci_del(config, section, option, commit)
 	exec_call(string.format("uci -q delete %s.%s.%s", config, section, option))
-	exec_call(string.format("uci -q commit %s", config))
+	if commit then sh_uci_commit(config) end
 end
 
-function sh_uci_add_list(config, section, option, val)
+function sh_uci_add_list(config, section, option, val, commit)
 	exec_call(string.format("uci -q del_list %s.%s.%s=\"%s\"", config, section, option, val))
 	exec_call(string.format("uci -q add_list %s.%s.%s=\"%s\"", config, section, option, val))
+	if commit then sh_uci_commit(config) end
+end
+
+function sh_uci_commit(config)
 	exec_call(string.format("uci -q commit %s", config))
 end
 
@@ -312,7 +314,7 @@ function strToTable(str)
 end
 
 function is_normal_node(e)
-	if e and e.type and e.protocol and (e.protocol == "_balancing" or e.protocol == "_shunt" or e.protocol == "_iface") then
+	if e and e.type and e.protocol and (e.protocol == "_balancing" or e.protocol == "_shunt" or e.protocol == "_iface" or e.protocol == "_urltest") then
 		return false
 	end
 	return true
@@ -442,7 +444,7 @@ function get_valid_nodes()
 	uci:foreach(appname, "nodes", function(e)
 		e.id = e[".name"]
 		if e.type and e.remarks then
-			if e.protocol and (e.protocol == "_balancing" or e.protocol == "_shunt" or e.protocol == "_iface") then
+			if e.protocol and (e.protocol == "_balancing" or e.protocol == "_shunt" or e.protocol == "_iface" or e.protocol == "_urltest") then
 				local type = e.type
 				if type == "sing-box" then type = "Sing-Box" end
 				e["remark"] = "%s：[%s] " % {type .. " " .. i18n.translatef(e.protocol), e.remarks}
@@ -492,7 +494,7 @@ end
 function get_node_remarks(n)
 	local remarks = ""
 	if n then
-		if n.protocol and (n.protocol == "_balancing" or n.protocol == "_shunt" or n.protocol == "_iface") then
+		if n.protocol and (n.protocol == "_balancing" or n.protocol == "_shunt" or n.protocol == "_iface" or n.protocol == "_urltest") then
 			remarks = "%s：[%s] " % {n.type .. " " .. i18n.translatef(n.protocol), n.remarks}
 		else
 			local type2 = n.type
@@ -1112,7 +1114,7 @@ end
 function get_version()
 	local version = sys.exec("opkg list-installed luci-app-passwall2 2>/dev/null | awk '{print $3}'")
 	if not version or #version == 0 then
-		version = sys.exec("apk info -L luci-app-passwall2 2>/dev/null | awk 'NR == 1 {print $1}' | cut -d'-' -f4-")
+		version = sys.exec("apk list luci-app-passwall2 2>/dev/null | awk '/installed/ {print $1}' | cut -d'-' -f4-")
 	end
 	return version or ""
 end
@@ -1230,11 +1232,16 @@ function luci_types(id, m, s, type_name, option_prefix)
 				end
 				s.fields[key].remove = function(self, section)
 					if s.fields["type"]:formvalue(id) == type_name then
-						if self.rewrite_option and rewrite_option_table[self.rewrite_option] == 1 then
-							m:del(section, self.rewrite_option)
+						-- 添加自定义 custom_remove 属性，如果有自定义的 custom_remove 函数，则使用自定义的 remove 逻辑
+						if self.custom_remove then
+							self:custom_remove(section)
 						else
-							if self.option:find(option_prefix) == 1 then
-								m:del(section, self.option:sub(1 + #option_prefix))
+							if self.rewrite_option and rewrite_option_table[self.rewrite_option] == 1 then
+								m:del(section, self.rewrite_option)
+							else
+								if self.option:find(option_prefix) == 1 then
+									m:del(section, self.option:sub(1 + #option_prefix))
+								end
 							end
 						end
 					end
