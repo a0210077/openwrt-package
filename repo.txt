@@ -1,5 +1,5 @@
-https://github.com/siwind/openwrt-vlmcsd.git|KMS服务器|
-https://github.com/siwind/luci-app-vlmcsd.git|KMS服务器的luci界面|
-https://github.com/xiaorouji/openwrt-passwall2.git;25.3.2-1|Passwall2|
-https://github.com/xiaorouji/openwrt-passwall-packages.git;main|Passwall_package|
-https://github.com/sbwml/luci-app-qbittorrent.git|qBittorrent|
+https://github.com/siwind/openwrt-vlmcsd.git|KMS服务器|Y|
+https://github.com/siwind/luci-app-vlmcsd.git|KMS服务器的luci界面|Y|
+https://github.com/xiaorouji/openwrt-passwall2.git;25.3.2-1|Passwall2|N|
+https://github.com/xiaorouji/openwrt-passwall-packages.git;main|Passwall_package|N|
+https://github.com/sbwml/luci-app-qbittorrent.git|qBittorrent|N|
