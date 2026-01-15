@@ -9,6 +9,8 @@ cd $FEEDS_FOLDER || exit 2
 
 #qb冲突的包
 rm -rf packages/libs/rblibtorrent
+rm -rf packages/net/qBittorrent
+rm -rf packages/net/qBittorrent-static
 rm -rf luci/applications/luci-app-qbittorrent
 
 #tr冲突的包
