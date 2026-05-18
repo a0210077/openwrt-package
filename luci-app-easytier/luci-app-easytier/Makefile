@@ -5,9 +5,10 @@
 #
 
 include $(TOPDIR)/rules.mk
+-include $(dir $(lastword $(MAKEFILE_LIST)))../version.mk
 
-PKG_VERSION:=2.5.0
-PKG_RELEASE:=2
+PKG_VERSION:=$(or $(EASYTIER_VERSION),2.6.4)
+PKG_RELEASE:=1
 
 LUCI_TITLE:=LuCI support for EasyTier
 LUCI_DEPENDS:=+kmod-tun +luci-compat
@@ -16,6 +17,7 @@ LUCI_PKGARCH:=all
 PKG_NAME:=luci-app-easytier
 
 define Package/$(PKG_NAME)/conffiles
+/etc/config/easytier
 /etc/easytier/
 endef
 
@@ -51,9 +53,6 @@ if [ -d /tmp/et_config_backup ] ; then
   echo "请前往 VPN - EasyTier 界面进行重启插件"
 fi
 endef
-
-$(eval $(call Build/Template,Package/$(PKG_NAME)/prerm))
-$(eval $(call Build/Template,Package/$(PKG_NAME)/postinst))
 
 include $(TOPDIR)/feeds/luci/luci.mk
 

@@ -1,2 +1,2 @@
-https://github.com/EasyTier/luci-app-easytier.git;v2.5.0|EasyTier|N|
+https://github.com/EasyTier/luci-app-easytier.git;v2.6.4|EasyTier|N|
 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git|passwall-package|N|
