@@ -4,7 +4,8 @@
 |名称|描述|备注|
 |----|----|----|
 |[luci-app-easytier](https://github.com/EasyTier/luci-app-easytier.git)|EasyTier||
-|[openwrt-passwall-packages](https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git)|passwall-package||
+|[openwrt-passwall-packages](https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git)|passwall-pack||
+|[openwrt-passwall2](https://github.com/Openwrt-Passwall/openwrt-passwall2.git)|passwall2||
 
 
 # OpenWrt相关
