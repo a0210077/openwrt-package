@@ -255,6 +255,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 				--max_version = "1.3",
 				fragment = fragment,
 				record_fragment = record_fragment,
+				certificate = (node.tls_certificate == "1" and node.tls_certificate_pem ~= "") and split(node.tls_certificate_pem, "\n") or nil,
 				ech = (node.ech == "1") and (function()
 					local function get_ech_domain(s) --兼容xray "域名+DNS" 格式ech
 						local domain, dns = s:match("^([^+]+)%+(.+)$")
@@ -616,8 +617,9 @@ function gen_outbound(flag, node, tag, proxy_table)
 					result.server_port = nil
 					local realm = api.parse_realm_uri(node.hysteria2_realm_url)
 					if realm then
-						realm.server_url = realm.server_url and "https://" .. realm.server_url or nil
+						realm.server_url = (realm.scheme == "realm+http" and "http://" or "https://") .. realm.server_url
 						realm.stun_servers = realm.stun_servers or node.hysteria2_realm_stun
+						realm.scheme = nil
 						return realm
 					end
 					return nil
@@ -958,8 +960,9 @@ function gen_config_server(node)
 			realm = node.hysteria2_realms and (function()
 				local realm = api.parse_realm_uri(node.hysteria2_realm_url)
 				if realm then
-					realm.server_url = realm.server_url and "https://" .. realm.server_url or nil
+					realm.server_url = (realm.scheme == "realm+http" and "http://" or "https://") .. realm.server_url
 					realm.stun_servers = realm.stun_servers or node.hysteria2_realm_stun
+					realm.scheme = nil
 					realm.stun_domain_resolver = "direct"
 					return realm
 				end
@@ -1797,6 +1800,11 @@ function gen_config(var)
 	end
 
 	if COMMON.default_outbound_tag then
+		table.insert(route.rules, {
+			action = "route",
+			port_range = { "0:65535" },
+			outbound = COMMON.default_outbound_tag
+		})
 		route.final = COMMON.default_outbound_tag
 	end
 

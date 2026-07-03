@@ -20,8 +20,8 @@ function gen_config_server(node)
 			key = node.tls_keyFile,
 		},
 		obfs = (node.hysteria2_obfs_type and node.hysteria2_obfs_password) and {
-			type = "salamander",
-			salamander = {
+			type = node.hysteria2_obfs_type,
+			[node.hysteria2_obfs_type] = {
 				password = node.hysteria2_obfs_password
 			}
 		} or nil,
@@ -64,7 +64,8 @@ function gen_config(var)
 		server_host = api.get_ipv6_full(server_host)
 	end
 
-	local server = server_host .. ":" .. ((server_port or "") .. "," .. (node.hysteria2_hop or "")):gsub("^[%s,]+", ""):gsub("[%s,]+$", ""):gsub(":", "-")
+	local port_hop = ((server_port or "") .. "," .. (node.hysteria2_hop or "")):gsub("^[%s,]+", ""):gsub("[%s,]+$", ""):gsub(":", "-")
+	local server = server_host .. ":" .. (port_hop ~= "" and port_hop or "443")
 
 	local config = {
 		server = (function()
@@ -101,8 +102,8 @@ function gen_config(var)
 			end)() or nil
 		},
 		obfs = (node.hysteria2_obfs_type and node.hysteria2_obfs_password) and {
-			type = "salamander",
-			salamander = {
+			type = node.hysteria2_obfs_type,
+			[node.hysteria2_obfs_type] = {
 				password = node.hysteria2_obfs_password
 			}
 		} or nil,
