@@ -58,7 +58,7 @@ function index()
 	entry({"admin", "services", appname, "server_user"}, cbi(appname .. "/server/user")).leaf = true
 
 	--[[ API ]]
-	entry({"admin", "services", appname, "server_user_update"}, call("server_user_update")).leaf = true
+	entry({"admin", "", appname, "server_user_update"}, call("server_user_update")).leaf = true
 	entry({"admin", "services", appname, "server_user_status"}, call("server_user_status")).leaf = true
 	entry({"admin", "services", appname, "server_user_log"}, call("server_user_log")).leaf = true
 	entry({"admin", "services", appname, "server_get_log"}, call("server_get_log")).leaf = true
