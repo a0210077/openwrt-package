@@ -48,36 +48,36 @@ function index()
 	end
 	
 	--entry({"admin", "vpn"}, firstchild(), "VPN", 45).dependent = false
-	entry({"admin", "service", "easytier"}, firstchild(),_("EasyTier"), 46).dependent = true
-	entry({"admin", "service", "easytier", "status"}, cbi("easytier_status"),_("Status"), 1).leaf = true
-	entry({"admin", "service", "easytier", "config"}, cbi("easytier"),_("EasyTier Core"), 2).leaf = true
-	entry({"admin", "service", "easytier", "webconsole"}, template("easytier/easytier_web"),_("EasyTier Web"), 3).leaf = true
-	entry({"admin", "service", "easytier", "log"}, template("easytier/easytier_log"),_("Logs"), 4).leaf = true
-	entry({"admin", "service", "easytier", "upload"}, template("easytier/easytier_upload"),_("Upload Program"), 5).leaf = true
-	entry({"admin", "service", "easytier", "upload_binary"}, call("upload_binary")).leaf = true
-	entry({"admin", "service", "easytier", "get_upload_config"}, call("get_upload_config")).leaf = true
-	entry({"admin", "service", "easytier", "save_upload_config"}, call("save_upload_config")).leaf = true
-	entry({"admin", "service", "easytier", "get_disk_space"}, call("get_disk_space")).leaf = true
-	entry({"admin", "service", "easytier", "get_tun_info"}, call("get_tun_info")).leaf = true
-	entry({"admin", "service", "easytier", "get_log"}, call("get_log")).leaf = true
-	entry({"admin", "service", "easytier", "get_log_size"}, call("get_log_size")).leaf = true
-	entry({"admin", "service", "easytier", "clear_log"}, call("clear_log")).leaf = true
-	entry({"admin", "service", "easytier", "get_wlog"}, call("get_wlog")).leaf = true
-	entry({"admin", "service", "easytier", "get_wlog_size"}, call("get_wlog_size")).leaf = true
-	entry({"admin", "service", "easytier", "clear_wlog"}, call("clear_wlog")).leaf = true
-	entry({"admin", "service", "easytier", "clear_version_cache"}, call("clear_version_cache")).leaf = true
-	entry({"admin", "service", "easytier", "get_web_config"}, call("get_web_config")).leaf = true
-	entry({"admin", "service", "easytier", "save_web_config"}, call("save_web_config")).leaf = true
-	entry({"admin", "service", "easytier", "reset_database"}, call("reset_database")).leaf = true
-	entry({"admin", "service", "easytier", "check_web_status"}, call("check_web_status")).leaf = true
-	entry({"admin", "service", "easytier", "api_status"}, call("act_status")).leaf = true
-	entry({"admin", "service", "easytier", "api_conninfo"}, call("act_conninfo")).leaf = true
-	entry({"admin", "service", "easytier", "restart_service"}, call("restart_service")).leaf = true
-	entry({"admin", "service", "easytier", "toggle_core"}, call("toggle_core")).leaf = true
-	entry({"admin", "service", "easytier", "toggle_web"}, call("toggle_web")).leaf = true
-	entry({"admin", "service", "easytier", "download_easytier"}, call("download_easytier")).leaf = true
-	entry({"admin", "service", "easytier", "download_progress"}, call("download_progress")).leaf = true
-	entry({"admin", "service", "easytier", "cancel_download"}, call("cancel_download")).leaf = true
+	entry({"admin", "services", "easytier"}, firstchild(),_("EasyTier"), 46).dependent = true
+	entry({"admin", "services", "easytier", "status"}, cbi("easytier_status"),_("Status"), 1).leaf = true
+	entry({"admin", "services", "easytier", "config"}, cbi("easytier"),_("EasyTier Core"), 2).leaf = true
+	entry({"admin", "services", "easytier", "webconsole"}, template("easytier/easytier_web"),_("EasyTier Web"), 3).leaf = true
+	entry({"admin", "services", "easytier", "log"}, template("easytier/easytier_log"),_("Logs"), 4).leaf = true
+	entry({"admin", "services", "easytier", "upload"}, template("easytier/easytier_upload"),_("Upload Program"), 5).leaf = true
+	entry({"admin", "services", "easytier", "upload_binary"}, call("upload_binary")).leaf = true
+	entry({"admin", "services", "easytier", "get_upload_config"}, call("get_upload_config")).leaf = true
+	entry({"admin", "services", "easytier", "save_upload_config"}, call("save_upload_config")).leaf = true
+	entry({"admin", "services", "easytier", "get_disk_space"}, call("get_disk_space")).leaf = true
+	entry({"admin", "services", "easytier", "get_tun_info"}, call("get_tun_info")).leaf = true
+	entry({"admin", "services", "easytier", "get_log"}, call("get_log")).leaf = true
+	entry({"admin", "services", "easytier", "get_log_size"}, call("get_log_size")).leaf = true
+	entry({"admin", "services", "easytier", "clear_log"}, call("clear_log")).leaf = true
+	entry({"admin", "services", "easytier", "get_wlog"}, call("get_wlog")).leaf = true
+	entry({"admin", "services", "easytier", "get_wlog_size"}, call("get_wlog_size")).leaf = true
+	entry({"admin", "services", "easytier", "clear_wlog"}, call("clear_wlog")).leaf = true
+	entry({"admin", "services", "easytier", "clear_version_cache"}, call("clear_version_cache")).leaf = true
+	entry({"admin", "services", "easytier", "get_web_config"}, call("get_web_config")).leaf = true
+	entry({"admin", "services", "easytier", "save_web_config"}, call("save_web_config")).leaf = true
+	entry({"admin", "services", "easytier", "reset_database"}, call("reset_database")).leaf = true
+	entry({"admin", "services", "easytier", "check_web_status"}, call("check_web_status")).leaf = true
+	entry({"admin", "services", "easytier", "api_status"}, call("act_status")).leaf = true
+	entry({"admin", "services", "easytier", "api_conninfo"}, call("act_conninfo")).leaf = true
+	entry({"admin", "services", "easytier", "restart_service"}, call("restart_service")).leaf = true
+	entry({"admin", "services", "easytier", "toggle_core"}, call("toggle_core")).leaf = true
+	entry({"admin", "services", "easytier", "toggle_web"}, call("toggle_web")).leaf = true
+	entry({"admin", "services", "easytier", "download_easytier"}, call("download_easytier")).leaf = true
+	entry({"admin", "services", "easytier", "download_progress"}, call("download_progress")).leaf = true
+	entry({"admin", "services", "easytier", "cancel_download"}, call("cancel_download")).leaf = true
 end
 
 function act_status()
