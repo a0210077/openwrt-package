@@ -205,7 +205,7 @@ luci-app-easytier/
 
 ```lua
 -- API path format
-entry({"admin", "vpn", "easytier", "api_name"}, call("function_name")).leaf = true
+entry({"admin", "services", "easytier", "api_name"}, call("function_name")).leaf = true
 
 -- Return JSON format
 function api_name()

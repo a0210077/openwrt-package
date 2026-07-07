@@ -47,7 +47,7 @@ function index()
 		return
 	end
 	
-	--entry({"admin", "vpn"}, firstchild(), "VPN", 45).dependent = false
+	--entry({"admin", "services"}, firstchild(), "VPN", 45).dependent = false
 	entry({"admin", "services", "easytier"}, firstchild(),_("EasyTier"), 46).dependent = true
 	entry({"admin", "services", "easytier", "status"}, cbi("easytier_status"),_("Status"), 1).leaf = true
 	entry({"admin", "services", "easytier", "config"}, cbi("easytier"),_("EasyTier Core"), 2).leaf = true

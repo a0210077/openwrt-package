@@ -211,7 +211,7 @@ luci-app-easytier/
 
 ```lua
 -- API路径格式
-entry({"admin", "vpn", "easytier", "api_name"}, call("function_name")).leaf = true
+entry({"admin", "services", "easytier", "api_name"}, call("function_name")).leaf = true
 
 -- 返回JSON格式
 function api_name()
